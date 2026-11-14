@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>Tekstil Planlama</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#f6f7f9;--fg:#1c2330;--card:#fff;--bd:#d9dde3;--ac:#2563eb;--mu:#667085}
+@media(prefers-color-scheme:dark){:root{--bg:#14171c;--fg:#e6e9ee;--card:#1d2128;--bd:#323843;--ac:#6b9bff;--mu:#98a2b3}}
+*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+header{display:flex;gap:8px;align-items:center;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--bd)}
+header b{margin-right:12px}button,select,input{font:inherit;padding:5px 9px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--fg)}
+button{cursor:pointer}button.on,button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+main{padding:16px}.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:14px;overflow-x:auto}
+table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mu);font-weight:600}
+.row{display:flex;align-items:center;margin-bottom:6px}.lbl{width:110px;flex:none;font-weight:600}
+.track{position:relative;flex:1;height:30px;border:1px solid var(--bd);border-radius:4px;
+ background:repeating-linear-gradient(90deg,transparent 0 calc(100%/14 - 1px),var(--bd) calc(100%/14 - 1px) calc(100%/14))}
+.bar{position:absolute;top:3px;bottom:3px;background:var(--ac);color:#fff;border-radius:4px;padding:0 6px;font-size:12px;line-height:22px;overflow:hidden;cursor:pointer;white-space:nowrap}
+.days{display:flex;margin-left:110px;color:var(--mu);font-size:11px}.days span{flex:1}
+.err{color:#d92d20;margin-left:8px}.grid{display:flex;flex-wrap:wrap;gap:8px;align-items:end}.grid label{display:flex;flex-direction:column;font-size:12px;color:var(--mu)}
+</style></head><body>
+<header><b>Tekstil Planlama</b><button id="t-plan" class="on">Plan Panosu</button><button id="t-data">Veri</button></header>
+<main>
+<section id="v-plan">
+ <div class="card"><div class="days" id="days"></div><div id="board"></div></div>
+ <div class="card"><div class="grid" id="aform">
+  <label>İş emri<input id="a-id" readonly size="5"></label>
+  <label>Hat<select id="a-line"></select></label>
+  <label>Başlangıç<input id="a-s" type="datetime-local"></label>
+  <label>Bitiş<input id="a-e" type="datetime-local"></label>
+  <button class="pri" id="a-save">Kaydet</button><button id="a-clear">Planı kaldır</button><span class="err" id="a-err"></span></div></div>
+ <div class="card"><table><thead><tr><th>No</th><th>Sipariş</th><th>Model</th><th>Departman</th><th>Adet</th><th>Termin</th><th>Hat</th><th>Başlangıç</th><th>Bitiş</th></tr></thead><tbody id="olist"></tbody></table></div>
+</section>
+<section id="v-data" hidden>
+ <div class="card"><select id="tbl"></select> <span class="err" id="d-err"></span></div>
+ <div class="card"><div class="grid" id="dform"></div></div>
+ <div class="card"><table id="dtable"></table></div>
+</section>
+</main>
+<script src="/static/labels.js"></script>
+<script>
+const $=s=>document.querySelector(s),esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function api(u,o){const r=await fetch(u,o);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(typeof j.detail=='string'?j.detail:'Geçersiz giriş, alanları kontrol edin');return j}
+const post=(u,m,b)=>api(u,{method:m,headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+const loc=d=>d?new Date(new Date(d)-new Date(d).getTimezoneOffset()*6e4).toISOString().slice(0,16):'';
+const fmt=d=>d?new Date(d).toLocaleString('tr-TR',{dateStyle:'short',timeStyle:'short'}):'';
+$('#t-plan').onclick=()=>show('plan');$('#t-data').onclick=()=>show('data');
+function show(v){$('#v-plan').hidden=v!='plan';$('#v-data').hidden=v!='data';$('#t-plan').classList.toggle('on',v=='plan');$('#t-data').classList.toggle('on',v=='data');v=='plan'?loadPlan():loadTables()}
+let P={lines:[],orders:[]};
+async function loadPlan(){
+ P=await api('/api/plan');
+ const t0=new Date();t0.setHours(0,0,0,0);const from=t0.getTime(),span=14*864e5;
+ $('#days').innerHTML=[...Array(14)].map((_,i)=>`<span>${new Date(from+i*864e5).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'})}</span>`).join('');
+ $('#board').innerHTML=P.lines.map(l=>`<div class="row"><div class="lbl">${esc(l.code)}</div><div class="track">`+
+  P.orders.filter(o=>o.line_id==l.id&&o.planned_start).map(o=>{
+   const s=Math.max(0,(new Date(o.planned_start)-from)/span*100),e=Math.min(100,(new Date(o.planned_end)-from)/span*100);
+   return e>s?`<div class="bar" data-id="${o.id}" style="left:${s}%;width:${e-s}%" title="${esc(o.order_no)} ${esc(o.style_code)} · ${o.planned_qty} adet">#${o.id} ${esc(o.style_code)}</div>`:''}).join('')+`</div></div>`).join('');
+ document.querySelectorAll('.bar').forEach(b=>b.onclick=()=>pick(+b.dataset.id));
+ $('#a-line').innerHTML='<option value="">—</option>'+P.lines.map(l=>`<option value="${l.id}">${esc(l.code)}</option>`).join('');
+ $('#olist').innerHTML=P.orders.map(o=>`<tr style="cursor:pointer" data-id="${o.id}"><td>${o.id}</td><td>${esc(o.order_no)}</td><td>${esc(o.style_code)}</td><td>${esc(o.dept)}</td><td>${o.planned_qty}</td><td>${esc(o.ship_date)}</td><td>${esc(P.lines.find(l=>l.id==o.line_id)?.code||'—')}</td><td>${fmt(o.planned_start)}</td><td>${fmt(o.planned_end)}</td></tr>`).join('');
+ document.querySelectorAll('#olist tr').forEach(r=>r.onclick=()=>pick(+r.dataset.id));
+}
+function pick(id){const o=P.orders.find(x=>x.id==id);$('#a-id').value=id;$('#a-line').value=o.line_id||'';
+ const n=new Date();n.setMinutes(0,0,0);$('#a-s').value=loc(o.planned_start)||loc(n);$('#a-e').value=loc(o.planned_end)||loc(new Date(n.getTime()+8*36e5));$('#a-err').textContent=''}
+async function save(clear){const id=$('#a-id').value;if(!id)return;
+ try{await post('/api/plan/'+id,'PUT',clear?{}:{line_id:+$('#a-line').value||null,planned_start:$('#a-s').value||null,planned_end:$('#a-e').value||null});$('#a-err').textContent='';loadPlan()}
+ catch(e){$('#a-err').textContent=e.message}}
+$('#a-save').onclick=()=>save(false);$('#a-clear').onclick=()=>save(true);
+const cell=v=>typeof v=='boolean'?(v?'Evet':'Hayır'):(v&&typeof v=='object'?JSON.stringify(v):v);
+async function loadTables(){if($('#tbl').options.length)return loadRows();
+ $('#tbl').innerHTML=(await api('/api/tables')).map(t=>`<option value="${t}">${esc(L.t(t))}</option>`).join('');$('#tbl').onchange=loadRows;loadRows()}
+async function loadRows(){const t=$('#tbl').value;$('#d-err').textContent='';
+ const d=await api('/api/t/'+t);
+ $('#dform').innerHTML=d.form.map(c=>`<label>${esc(L.c(c.name))}${c.required?' *':''}${c.type=='boolean'?`<select data-c="${esc(c.name)}"><option value="">—</option><option value="true">Evet</option><option value="false">Hayır</option></select>`:`<input data-c="${esc(c.name)}" placeholder="${esc(L.ty(c.type))}">`}</label>`).join('')+'<button class="pri" id="add">Ekle</button>';
+ $('#add').onclick=async()=>{const b={};document.querySelectorAll('#dform [data-c]').forEach(i=>b[i.dataset.c]=i.value);
+  try{await post('/api/t/'+t,'POST',b);loadRows()}catch(e){$('#d-err').textContent=e.message}};
+ const keys=d.rows[0]?Object.keys(d.rows[0]):d.form.map(c=>c.name);
+ $('#dtable').innerHTML='<tr>'+keys.map(k=>`<th>${esc(L.c(k))}</th>`).join('')+(d.deletable?'<th></th>':'')+'</tr>'+
+  d.rows.map(r=>'<tr>'+keys.map(k=>`<td>${esc(cell(r[k]))}</td>`).join('')+(d.deletable?`<td><button data-del="${r.id}">Sil</button></td>`:'')+'</tr>').join('');
+ document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Silinsin mi?'))return;
+  try{await api(`/api/t/${t}/${b.dataset.del}`,{method:'DELETE'});loadRows()}catch(e){$('#d-err').textContent=e.message}});
+}
+loadPlan();
+</script></body></html>
