@@ -1,5 +1,6 @@
 import os
 import re
+import threading
 from datetime import datetime
 from typing import Optional
 
@@ -11,7 +12,13 @@ from psycopg import sql
 from psycopg.rows import dict_row
 from pydantic import BaseModel
 
-DSN = os.getenv("DATABASE_URL", "postgresql://tekstil:tekstil@localhost:5432/tekstil")
+try:  # isteğe bağlı: bağlantı havuzu (pip install psycopg-pool). Yoksa her istekte yeni bağlantı açılır.
+    from psycopg_pool import ConnectionPool
+except ImportError:  # pragma: no cover
+    ConnectionPool = None
+
+# Windows'ta "localhost" önce IPv6 (::1) denenir ve reddedilen her bağlantı ~1 sn bekletir; 127.0.0.1 bunu önler.
+DSN = os.getenv("DATABASE_URL", "postgresql://tekstil:tekstil@127.0.0.1:5432/tekstil").replace("@localhost", "@127.0.0.1")
 HERE = os.path.dirname(__file__)
 app = FastAPI(title="Tekstil Planlama")
 
@@ -28,8 +35,29 @@ HATA = {
 }
 
 
+_pool = None
+_pool_lock = threading.Lock()
+
+
+def _get_pool():
+    global _pool
+    if ConnectionPool is None:
+        return None
+    if _pool is None:
+        with _pool_lock:
+            if _pool is None:
+                _pool = ConnectionPool(DSN, min_size=1, max_size=8, timeout=10, open=True,
+                                       kwargs={"row_factory": dict_row})
+    return _pool
+
+
 def run(query, params=None):
     try:
+        pool = _get_pool()
+        if pool is not None:
+            with pool.connection() as conn:
+                cur = conn.execute(query, params)
+                return cur.fetchall() if cur.description else []
         with psycopg.connect(DSN, row_factory=dict_row) as conn:
             cur = conn.execute(query, params)
             return cur.fetchall() if cur.description else []
@@ -84,6 +112,75 @@ def enums(table: str):
     return out
 
 
+# Yabancı anahtar listelerinde gösterilecek etiketler. Takma ad `t`, başvurulan tablodur.
+LABELS = {
+    "app_user": "t.full_name",
+    "bom": "(SELECT s.style_code FROM style s WHERE s.id = t.style_id) || ' BOM v' || t.version",
+    "bom_line": "'#' || t.id || ' ' || (SELECT m.code FROM material m WHERE m.id = t.material_id)",
+    "business_partner": "t.code || ' – ' || t.name",
+    "color": "t.code || ' – ' || t.name",
+    "cutting_order": "'#' || t.id || COALESCE(' · ' || t.planned_date::text, '')",
+    "defect_type": "t.code || ' – ' || t.name",
+    "department": "t.name",
+    "inspection": "'#' || t.id || ' · ' || t.stage",
+    "marker": "COALESCE(t.marker_name, '#' || t.id)",
+    "material": "t.code || ' – ' || t.name",
+    "material_lot": "t.lot_no",
+    "operation": "t.name",
+    "operator": "t.full_name",
+    "order_line": "(SELECT so.order_no || ' / ' || s.style_code FROM sales_order so, style s "
+                  "WHERE so.id = t.sales_order_id AND s.id = t.style_id)",
+    "plan_scenario": "t.name",
+    "production_line": "t.code || ' – ' || t.name",
+    "purchase_order": "t.po_no",
+    "purchase_order_line": "(SELECT po.po_no || ' / ' || m.code FROM purchase_order po, material m "
+                           "WHERE po.id = t.purchase_order_id AND m.id = t.material_id)",
+    "routing": "(SELECT s.style_code FROM style s WHERE s.id = t.style_id) || ' rota v' || t.version",
+    "routing_step": "(SELECT s.style_code || ' v' || r.version || ' › ' || t.seq || '. ' || d.name "
+                    "FROM routing r, style s, department d "
+                    "WHERE r.id = t.routing_id AND s.id = r.style_id AND d.id = t.department_id)",
+    "sales_order": "t.order_no",
+    "season": "t.code || ' – ' || t.name",
+    "size": "t.code",
+    "size_scale": "t.name",
+    "style": "t.style_code || COALESCE(' – ' || t.description, '')",
+    "style_variant": "(SELECT s.style_code || ' / ' || c.code || ' / ' || z.code FROM style s, color c, size z "
+                     "WHERE s.id = t.style_id AND c.id = t.color_id AND z.id = t.size_id)",
+    "subcontract_order": "'#' || t.id",
+    "subcontract_shipment": "COALESCE(t.waybill_no, '#' || t.id)",
+    "tenant": "t.name",
+    "unit_of_measure": "t.code || ' – ' || t.name",
+    "work_order": "(SELECT '#' || t.id || ' ' || so.order_no || ' / ' || s.style_code || ' / ' || d.name "
+                  "FROM order_line ol, sales_order so, style s, routing_step rs, department d "
+                  "WHERE ol.id = t.order_line_id AND so.id = ol.sales_order_id AND s.id = ol.style_id "
+                  "AND rs.id = t.routing_step_id AND d.id = rs.department_id)",
+    "working_calendar": "t.name",
+}
+ORDER_BY_KEY = {"bom_line", "cutting_order", "inspection", "subcontract_order", "work_order", "subcontract_shipment"}
+FK_LIMIT = 2000
+
+FK_SQL = """
+SELECT a.attname AS col, cf.relname AS ref, af.attname AS refcol
+FROM pg_constraint c
+JOIN pg_attribute a  ON a.attrelid = c.conrelid  AND a.attnum  = c.conkey[1]
+JOIN pg_class cf     ON cf.oid = c.confrelid
+JOIN pg_attribute af ON af.attrelid = c.confrelid AND af.attnum = c.confkey[1]
+WHERE c.contype = 'f' AND array_length(c.conkey, 1) = 1 AND c.conrelid = to_regclass(%s::text)
+"""
+
+
+def foreign_keys(table: str):
+    return {r["col"]: (r["ref"], r["refcol"]) for r in run(FK_SQL, ("public." + table,))}
+
+
+def fk_options(ref: str, key: str):
+    expr = LABELS.get(ref, "'#' || t." + '"' + key + '"')
+    order = "v" if ref in ORDER_BY_KEY else "l"
+    q = sql.SQL("SELECT t.{k} AS v, COALESCE(({e}), t.{k}::text) AS l FROM {r} t ORDER BY {o} LIMIT %s").format(
+        k=sql.Identifier(key), e=sql.SQL(expr), r=sql.Identifier(ref), o=sql.SQL(order))
+    return run(q, (FK_LIMIT,))
+
+
 @app.get("/")
 def index():
     return FileResponse(os.path.join(HERE, "static", "index.html"))
@@ -104,10 +201,20 @@ def list_rows(table: str, limit: int = 200):
     order = sql.SQL(" ORDER BY id DESC") if has_id else sql.SQL("")
     q = sql.SQL("SELECT * FROM {}{} LIMIT %s").format(sql.Identifier(table), order)
     en = enums(table)
+    fks, cache = foreign_keys(table), {}
+
+    def fk_info(col):
+        if col not in fks:
+            return None
+        ref, key = fks[col]
+        if (ref, key) not in cache:
+            cache[(ref, key)] = fk_options(ref, key)
+        return {"table": ref, "options": cache[(ref, key)]}
+
     form = [
         {"name": c["column_name"], "type": c["data_type"],
          "required": c["is_nullable"] == "NO" and c["column_default"] is None,
-         "options": en.get(c["column_name"])}
+         "options": en.get(c["column_name"]), "fk": fk_info(c["column_name"])}
         for c in cols
         if c["is_generated"] != "ALWAYS" and not (c["column_default"] or "").startswith("nextval")
     ]

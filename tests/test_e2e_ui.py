@@ -124,7 +124,8 @@ def test_menuden_tabloya_gecis(page):
 
 def test_menuden_plan_panosuna_donus(page):
     veri_tablosu(page, "app_user")
-    page.click('.gh[data-g="planlama"]')
+    if not page.is_visible('#menu a[data-t="@plan"]'):      # gruplar kullanıcı kapatana kadar açık kalır
+        page.click('.gh[data-g="planlama"]')
     page.click('#menu a[data-t="@plan"]')
     page.wait_for_selector("#board .row")
     assert page.is_visible("#v-plan") and not page.is_visible("#v-data")
@@ -208,7 +209,7 @@ def test_tablo_adlari_turkce(page):
 def test_alan_etiketleri_turkce(page):
     veri_tablosu(page, "app_user")
     etiketler = " ".join(page.locator("#dform label").all_inner_texts())
-    for ad in ("Firma No", "E-posta", "Ad Soyad", "Rol", "Aktif mi"):
+    for ad in ("Firma", "E-posta", "Ad Soyad", "Rol", "Aktif mi"):
         assert ad in etiketler
 
 
@@ -227,7 +228,7 @@ def test_evet_hayir_listesi(page):
 
 def test_kullanici_ekleme(page):
     veri_tablosu(page, "app_user")
-    page.fill('[data-c="tenant_id"]', "1")
+    page.select_option('[data-c="tenant_id"]', "1")
     page.fill('[data-c="email"]', "yeni@test.com")
     page.fill('[data-c="full_name"]', "Yeni Kullanıcı")
     page.select_option('[data-c="role"]', "planner")
@@ -240,7 +241,7 @@ def test_kullanici_ekleme(page):
 def test_tekrarli_kayit_uyarisi(page):
     veri_tablosu(page, "app_user")
     for _ in range(2):
-        page.fill('[data-c="tenant_id"]', "1")
+        page.select_option('[data-c="tenant_id"]', "1")
         page.fill('[data-c="email"]', "ayni@test.com")
         page.fill('[data-c="full_name"]', "Aynı")
         page.select_option('[data-c="role"]', "viewer")
@@ -250,20 +251,56 @@ def test_tekrarli_kayit_uyarisi(page):
     assert "zaten var" in page.inner_text("#d-err")
 
 
-def test_olmayan_firma_uyarisi(page):
+def test_firma_secim_listesi(page):
     veri_tablosu(page, "app_user")
-    page.fill('[data-c="tenant_id"]', "2")
-    page.fill('[data-c="email"]', "x@test.com")
-    page.fill('[data-c="full_name"]', "X")
-    page.select_option('[data-c="role"]', "manager")
+    assert page.locator('#dform select[data-c="tenant_id"]').count() == 1          # yazı kutusu değil
+    assert page.locator('#dform [data-c="tenant_id"] option').all_inner_texts() == ["Seçiniz…", "Demo Tekstil"]
+
+
+def test_yabanci_anahtar_etiketi_listede(page):
+    veri_tablosu(page, "app_user")
+    page.select_option('[data-c="tenant_id"]', "1")
+    page.fill('[data-c="email"]', "etiket@test.com")
+    page.fill('[data-c="full_name"]', "Etiket")
+    page.select_option('[data-c="role"]', "viewer")
     page.click("#add")
-    page.wait_for_function("document.querySelector('#d-err').textContent.length > 0")
-    assert "Bağlı kayıt" in page.inner_text("#d-err")
+    page.wait_for_selector("#dtable td:has-text('etiket@test.com')")
+    assert "Demo Tekstil" in page.inner_text("#dtable")             # "1" değil, firma adı
+    assert "Firma" in page.inner_text("#dtable th:nth-child(2)") and "Firma No" not in page.inner_text("#dtable")
+
+
+def test_siparis_satiri_listeleri_ve_ekleme(page):
+    veri_tablosu(page, "order_line")
+    sip = page.locator('#dform [data-c="sales_order_id"] option').all_inner_texts()
+    model = page.locator('#dform [data-c="style_id"] option').all_inner_texts()
+    assert sip == ["Seçiniz…", "SIP-0001"]
+    assert "TSH-100 – Basic tişört" in model and "PNT-200 – Chino pantolon" in model
+    page.select_option('[data-c="sales_order_id"]', "1")
+    page.select_option('[data-c="style_id"]', label="PNT-200 – Chino pantolon")
+    page.fill('[data-c="ship_date"]', "2031-01-01")
+    page.click("#add")
+    page.wait_for_selector("#dtable td:has-text('2031-01-01')")
+    satir = page.locator("#dtable tr", has_text="2031-01-01").inner_text()
+    assert "SIP-0001" in satir and "PNT-200 – Chino pantolon" in satir
+
+
+def test_is_emri_listesinde_okunabilir_etiketler(page):
+    veri_tablosu(page, "work_order")
+    t = page.inner_text("#dtable")
+    assert "SIP-0001 / TSH-100" in t and "TSH-100 v1 › 2. Dikim" in t and "BANT-1 – Bant 1" in t
+
+
+def test_bos_secenekli_liste_uyarisi(page):
+    veri_tablosu(page, "style_variant")              # model listesi dolu gelir
+    assert page.locator('#dform select[data-c="style_id"]').count() == 1
+    veri_tablosu(page, "bom_line")                   # örnekte BOM yok
+    ilk = page.locator('#dform [data-c="bom_id"] option').first.inner_text()
+    assert ilk.startswith("Kayıt yok") and "Ürün ağaçları" in ilk
 
 
 def test_zorunlu_alan_uyarisi(page):
     veri_tablosu(page, "app_user")
-    page.fill('[data-c="tenant_id"]', "1")
+    page.select_option('[data-c="tenant_id"]', "1")
     page.select_option('[data-c="role"]', "viewer")
     page.click("#add")
     page.wait_for_function("document.querySelector('#d-err').textContent.length > 0")
@@ -279,7 +316,7 @@ def test_bos_form_uyarisi(page):
 
 def test_kayit_silme(page):
     veri_tablosu(page, "app_user")
-    page.fill('[data-c="tenant_id"]', "1")
+    page.select_option('[data-c="tenant_id"]', "1")
     page.fill('[data-c="email"]', "sil@test.com")
     page.fill('[data-c="full_name"]', "Silinecek")
     page.select_option('[data-c="role"]', "operator")
@@ -292,7 +329,7 @@ def test_kayit_silme(page):
 
 def test_silmeyi_iptal_etme(page):
     veri_tablosu(page, "app_user")
-    page.fill('[data-c="tenant_id"]', "1")
+    page.select_option('[data-c="tenant_id"]', "1")
     page.fill('[data-c="email"]', "kal@test.com")
     page.fill('[data-c="full_name"]', "Kalacak")
     page.select_option('[data-c="role"]', "operator")

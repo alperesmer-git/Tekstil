@@ -37,9 +37,22 @@ yetkili bir kullanıcı gerekir (ör. `postgres`). Şifrede `@ : /` gibi karakte
 | `test_api_data.py` | Tablo listesi ve form meta verisi; limit; sıralama; 6 rolle ekleme; boş alan = varsayılan; evet/hayır; bilinmeyen alan; Türkçe karakter/tırnak; tarih; tüm hata mesajları (boş kayıt, geçersiz değer, tekrar, bağlı kayıt, zorunlu alan, biçim, tarih); silme ve bağımlılık; kimliksiz tablo; bilinmeyen/kötü niyetli tablo adları ve SQL enjeksiyonu |
 | `test_api_plan.py` | Pano verisi ve sıralaması; atama; çakışma (tam/kısmi/bitişik/kendi aralığı/iptal edilen iş emri); hatalı aralık; olmayan hat/iş emri; geçersiz tarih; plan kaldırma; art arda iş |
 | `test_workflows.py` | Siparişten plana uçtan uca akış; iki siparişin aynı bantta sırayla planlanması; tekrarlı sipariş no; silme sırası; yeni model tanımlama sırası |
+| `test_foreign_keys.py` | Şemadaki **tüm** yabancı anahtarların (108) açılır liste olarak gelmesi ve her etiket sorgusunun çalışması; okunabilir etiketler (sipariş, model, iş emri, rota adımı…); boş liste; metin anahtarlı tablo; sıralama |
 | `test_menu.py` | `menu.js`: şemadaki her tablo menüde tam bir kez yer alır, fazla/tekrarlı öğe yok, 13 grup |
 | `test_static_ui.py` | Ana sayfa ve statik dosyaların sunulması |
 | `test_e2e_ui.py` | Tarayıcıda: süreç menüsü (açılıp kapanma, tabloya geçiş, doğrudan adres, geçersiz adres), pano, atama, çakışma uyarısı, plan kaldırma, tablo/alan Türkçe adları, Rol ve durum seçim listeleri, kayıt ekleme/silme/iptal, hata uyarıları, JavaScript hatası olmaması |
+
+## Hız
+
+`pytest.ini` içindeki `--durations=10` her çalıştırmanın sonunda en yavaş 10 testi listeler.
+Hızlandıran önlemler: `localhost` yerine `127.0.0.1` kullanılır (Windows'ta IPv6 denemesi her bağlantıyı ~1 sn
+geciktirir), uygulama bağlantı havuzu kullanır (`pip install psycopg-pool`; kurulu değilse çalışır ama yavaşlar),
+ve her testten önce yalnızca kirlenmiş tablolar boşaltılır.
+
+## Otomatik çalıştırma
+
+Depodaki `.github/workflows/tests.yml`, `main` dalına her yüklemede PostgreSQL servisiyle tüm testleri
+(arayüz testleri dahil) GitHub Actions üzerinde çalıştırır. Sonuç depodaki **Actions** sekmesinde görünür.
 
 ## Notlar
 
