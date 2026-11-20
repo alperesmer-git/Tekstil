@@ -56,7 +56,21 @@ const TYPES = {
  'character varying':'metin', character:'metin', boolean:'evet / hayır', date:'tarih (YYYY-AA-GG)', 'timestamp with time zone':'tarih-saat',
  'timestamp without time zone':'tarih-saat', uuid:'UUID', jsonb:'JSON', json:'JSON'
 };
+const VALUES = {
+ admin:'Yönetici', planner:'Planlamacı', manager:'Üretim müdürü', operator:'Operatör', quality:'Kalite sorumlusu', viewer:'Yalnızca görüntüleyen',
+ fabric:'Kumaş', yarn:'İplik', trim:'Yardımcı malzeme (trim)', accessory:'Aksesuar', packaging:'Ambalaj', label:'Etiket',
+ knit:'Örme', woven:'Dokuma', draft:'Taslak', approved:'Onaylandı', obsolete:'Geçersiz', open:'Açık', in_production:'Üretimde',
+ shipped:'Sevk edildi', closed:'Kapandı', cancelled:'İptal edildi', receipt:'Giriş (mal kabul)', issue_cutting:'Kesime çıkış',
+ issue_subcontract:'Fasona çıkış', return:'İade', adjustment:'Düzeltme', out:'Giden (fasona)', in:'Dönen (fasondan)',
+ planned:'Planlandı', released:'Serbest bırakıldı', running:'Üretimde', done:'Tamamlandı', blocked:'Engelli',
+ machine_breakdown:'Makine arızası', material_wait:'Malzeme bekleme', changeover:'Model değişimi', no_operator:'Operatör yok',
+ power:'Elektrik kesintisi', other:'Diğer', sewing:'Dikim', print:'Baskı', wash:'Yıkama', finishing:'Bitim (ütü-paket)', measurement:'Ölçü',
+ incoming_fabric:'Gelen kumaş', inline:'Hat içi', endline:'Hat sonu', final:'Final kontrol', subcontract_return:'Fason dönüşü',
+ repair:'Tamir', second_quality:'İkinci kalite', scrap:'Hurda', manual:'Manuel', rule_based:'Kural tabanlı', ortools:'OR-Tools',
+ proposed:'Önerildi', rejected:'Reddedildi', superseded:'Yerini yenisi aldı', ml:'Makine öğrenmesi'
+};
 const L = {
+ v: n => VALUES[n] || n,
  t: n => TABLES[n] || n,
  c: n => COLS[n] || n,
  ty: n => TYPES[n] || n

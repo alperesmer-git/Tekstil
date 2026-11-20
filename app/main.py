@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -56,6 +57,33 @@ def columns(table: str):
 app.mount("/static", StaticFiles(directory=os.path.join(HERE, "static")), name="static")
 
 
+ENUM_RE = re.compile(r"^CHECK \(+(\w+)\)?(?:::\w+)? = ANY")
+
+
+def parse_enum(defn: str):
+    """'CHECK ((role = ANY (ARRAY['a'::text, 'b'::text])))' -> ('role', ['a', 'b'])"""
+    m = ENUM_RE.match(defn)
+    if not m or "ARRAY[" not in defn:
+        return None
+    arr = defn[defn.index("ARRAY["):]
+    vals = [v.replace("''", "'") for v in re.findall(r"'((?:[^']|'')*)'", arr)]
+    return (m.group(1), vals) if vals else None
+
+
+def enums(table: str):
+    rows = run(
+        "SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint "
+        "WHERE contype = 'c' AND conrelid = to_regclass(%s::text)",
+        ("public." + table,),
+    )
+    out = {}
+    for r in rows:
+        parsed = parse_enum(r["d"])
+        if parsed:
+            out[parsed[0]] = parsed[1]
+    return out
+
+
 @app.get("/")
 def index():
     return FileResponse(os.path.join(HERE, "static", "index.html"))
@@ -75,19 +103,21 @@ def list_rows(table: str, limit: int = 200):
     has_id = any(c["column_name"] == "id" for c in cols)
     order = sql.SQL(" ORDER BY id DESC") if has_id else sql.SQL("")
     q = sql.SQL("SELECT * FROM {}{} LIMIT %s").format(sql.Identifier(table), order)
+    en = enums(table)
     form = [
         {"name": c["column_name"], "type": c["data_type"],
-         "required": c["is_nullable"] == "NO" and c["column_default"] is None}
+         "required": c["is_nullable"] == "NO" and c["column_default"] is None,
+         "options": en.get(c["column_name"])}
         for c in cols
         if c["is_generated"] != "ALWAYS" and not (c["column_default"] or "").startswith("nextval")
     ]
-    return {"form": form, "rows": run(q, (limit,)), "deletable": has_id}
+    return {"form": form, "enums": en, "rows": run(q, (limit,)), "deletable": has_id}
 
 
 @app.post("/api/t/{table}")
 def insert_row(table: str, data: dict = Body(...)):
     allowed = {c["column_name"] for c in columns(table) if c["is_generated"] != "ALWAYS"}
-    items = {k: (None if v == "" else v) for k, v in data.items() if k in allowed}
+    items = {k: v for k, v in data.items() if k in allowed and v not in ("", None)}
     if not items:
         raise HTTPException(400, "Boş kayıt")
     q = sql.SQL("INSERT INTO {} ({}) VALUES ({}) RETURNING *").format(
@@ -144,6 +174,8 @@ def assign(wo_id: int, a: Assign):
             raise HTTPException(409, f"Hatta çakışma var: iş emri #{clash[0]['id']}")
     else:
         a.planned_start = a.planned_end = None
-    run("UPDATE work_order SET line_id=%s, planned_start=%s, planned_end=%s WHERE id=%s",
-        (a.line_id, a.planned_start, a.planned_end, wo_id))
+    done = run("UPDATE work_order SET line_id=%s, planned_start=%s, planned_end=%s WHERE id=%s RETURNING id",
+               (a.line_id, a.planned_start, a.planned_end, wo_id))
+    if not done:
+        raise HTTPException(404, "İş emri bulunamadı")
     return {"ok": True}

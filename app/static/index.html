@@ -64,17 +64,27 @@ async function save(clear){const id=$('#a-id').value;if(!id)return;
  try{await post('/api/plan/'+id,'PUT',clear?{}:{line_id:+$('#a-line').value||null,planned_start:$('#a-s').value||null,planned_end:$('#a-e').value||null});$('#a-err').textContent='';loadPlan()}
  catch(e){$('#a-err').textContent=e.message}}
 $('#a-save').onclick=()=>save(false);$('#a-clear').onclick=()=>save(true);
-const cell=v=>typeof v=='boolean'?(v?'Evet':'Hayır'):(v&&typeof v=='object'?JSON.stringify(v):v);
+let ENUMS={};
+const cell=(v,k)=>typeof v=='boolean'?(v?'Evet':'Hayır'):(ENUMS[k]&&v!=null?L.v(v):(v&&typeof v=='object'?JSON.stringify(v):v));
+function field(c){const n=esc(c.name);
+ const opts=c.options||(c.type=='boolean'?['true','false']:null);
+ if(!opts)return `<input data-c="${n}" placeholder="${esc(L.ty(c.type))}">`;
+ const lab=c.options?L.v:(v=>v=='true'?'Evet':'Hayır');
+ return `<select data-c="${n}"><option value="">${c.required?'Seçiniz…':'—'}</option>`+opts.map(o=>`<option value="${esc(o)}">${esc(lab(o))}</option>`).join('')+'</select>'}
 async function loadTables(){if($('#tbl').options.length)return loadRows();
  $('#tbl').innerHTML=(await api('/api/tables')).map(t=>`<option value="${t}">${esc(L.t(t))}</option>`).join('');$('#tbl').onchange=loadRows;loadRows()}
-async function loadRows(){const t=$('#tbl').value;$('#d-err').textContent='';
+let rowsSeq=0;
+async function loadRows(){const my=++rowsSeq,t=$('#tbl').value;$('#d-err').textContent='';
  const d=await api('/api/t/'+t);
- $('#dform').innerHTML=d.form.map(c=>`<label>${esc(L.c(c.name))}${c.required?' *':''}${c.type=='boolean'?`<select data-c="${esc(c.name)}"><option value="">—</option><option value="true">Evet</option><option value="false">Hayır</option></select>`:`<input data-c="${esc(c.name)}" placeholder="${esc(L.ty(c.type))}">`}</label>`).join('')+'<button class="pri" id="add">Ekle</button>';
+ if(my!==rowsSeq)return;   // daha yeni bir istek başladı; bu eski cevabı yok say
+ ENUMS=d.enums||{};
+ $('#v-data').dataset.table=t;
+ $('#dform').innerHTML=d.form.map(c=>`<label>${esc(L.c(c.name))}${c.required?' *':''}${field(c)}</label>`).join('')+'<button class="pri" id="add">Ekle</button>';
  $('#add').onclick=async()=>{const b={};document.querySelectorAll('#dform [data-c]').forEach(i=>b[i.dataset.c]=i.value);
   try{await post('/api/t/'+t,'POST',b);loadRows()}catch(e){$('#d-err').textContent=e.message}};
  const keys=d.rows[0]?Object.keys(d.rows[0]):d.form.map(c=>c.name);
  $('#dtable').innerHTML='<tr>'+keys.map(k=>`<th>${esc(L.c(k))}</th>`).join('')+(d.deletable?'<th></th>':'')+'</tr>'+
-  d.rows.map(r=>'<tr>'+keys.map(k=>`<td>${esc(cell(r[k]))}</td>`).join('')+(d.deletable?`<td><button data-del="${r.id}">Sil</button></td>`:'')+'</tr>').join('');
+  d.rows.map(r=>'<tr>'+keys.map(k=>`<td>${esc(cell(r[k],k))}</td>`).join('')+(d.deletable?`<td><button data-del="${r.id}">Sil</button></td>`:'')+'</tr>').join('');
  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Silinsin mi?'))return;
   try{await api(`/api/t/${t}/${b.dataset.del}`,{method:'DELETE'});loadRows()}catch(e){$('#d-err').textContent=e.message}});
 }
