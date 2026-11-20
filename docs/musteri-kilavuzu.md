@@ -18,7 +18,7 @@ Tanımlar ne kadar eksiksiz ve doğruysa plan o kadar güvenilir olur. İlk kuru
 
 ## 3. Modüllere Kısa Bakış
 
-Sistem 13 modülden oluşur. Modüllerin tamamına **Veri** ekranından erişilir; iş emri planlaması için ayrıca **Plan Panosu** vardır.
+Sistem 13 modülden oluşur. Modüllerin tamamına sol taraftaki **menüden** erişilir (Süreçler, Tanımlar, Analiz bölümleri); iş emri planlaması için ayrıca **Planlama › Plan Panosu** vardır.
 
 | # | Modül | Ne işe yarar | Başlıca kayıtlar | Ne zaman kullanılır |
 |---|---|---|---|---|
@@ -86,18 +86,18 @@ Malzemenin zamanında gelmesi terminin ön şartıdır. Bu adımları kullanıyo
 3. **Duruş kayıtları:** Makine arızası, malzeme bekleme gibi duruş nedenleri ve süreleri.
 4. **Kalite kontrol:** Kontrol edilen adet ve bulunan hatalar.
 
-> Bu kayıtlar bu sürümde Veri ekranından elle girilir. Tablet/barkodla anlık veri toplama sonraki sürümlerde planlanmıştır.
+> Bu kayıtlar bu sürümde menüdeki ilgili ekranlardan (Üretim, Kalite, Fason) elle girilir. Tablet/barkodla anlık veri toplama sonraki sürümlerde planlanmıştır.
 
 ### Süreç özeti
 
 | Süreç | Sıklık | Nerede yapılır | Öncesinde hazır olması gerekenler |
 |---|---|---|---|
-| İlk kurulum | Bir kez | Veri | Hat sayıları, bedenler, renk kodları, müşteri listesi |
-| Yeni model tanımı | Her yeni modelde | Veri | Kurulum tamamlanmış olmalı |
-| Sipariş girişi | Her siparişte | Veri | Model, varyantlar, BOM ve rota tanımlı olmalı |
-| Malzeme ve kesim hazırlığı | Siparişe göre | Veri | Sipariş girilmiş olmalı |
-| İş emri ve planlama | Günlük | Veri + Plan Panosu | Sipariş satırı ve rota adımı hazır olmalı |
-| Üretim, fason, kalite takibi | Günlük | Veri | İş emri açılmış olmalı |
+| İlk kurulum | Bir kez | Menü | Hat sayıları, bedenler, renk kodları, müşteri listesi |
+| Yeni model tanımı | Her yeni modelde | Menü | Kurulum tamamlanmış olmalı |
+| Sipariş girişi | Her siparişte | Menü | Model, varyantlar, BOM ve rota tanımlı olmalı |
+| Malzeme ve kesim hazırlığı | Siparişe göre | Menü | Sipariş girilmiş olmalı |
+| İş emri ve planlama | Günlük | Menü (Sipariş, Üretim…) + Plan Panosu | Sipariş satırı ve rota adımı hazır olmalı |
+| Üretim, fason, kalite takibi | Günlük | Menü | İş emri açılmış olmalı |
 
 ## 5. Önerilen Çalışma Rutini
 

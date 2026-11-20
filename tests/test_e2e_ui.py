@@ -81,25 +81,66 @@ def sec_is_emri(page, i, hat, bas, bit):
 
 
 def veri_tablosu(page, tablo):
-    page.click("#t-data")
-    page.wait_for_selector("#tbl option", state="attached")
-    page.select_option("#tbl", tablo)
+    page.evaluate("t => { location.hash = '#t/' + t }", tablo)
     # Form, seçilen tablo için çizilene kadar bekle (önceki tablonun formunu okumamak için)
     page.wait_for_selector(f'#v-data[data-table="{tablo}"] #dform [data-c]')
 
 
 # ---------- genel ----------
-def test_baslik_ve_sekmeler(page):
+def test_baslik_ve_menu(page):
     assert page.title() == "Tekstil Planlama"
-    assert page.inner_text("#t-plan") == "Plan Panosu"
-    assert page.inner_text("#t-data") == "Veri"
+    gruplar = page.locator("#menu .gh").all_inner_texts()
+    for ad in ("Planlama", "Sipariş", "Depo ve Satın Alma", "Kesim", "Üretim", "Fason", "Kalite",
+               "Ürün ve Model", "Malzeme ve Ürün Ağacı", "Rota ve Operasyon", "Hat ve Kapasite",
+               "Temel Tanımlar", "Yapay Zeka ve Analiz"):
+        assert any(ad in g for g in gruplar), ad
+    assert [x.upper() for x in page.locator("#menu .sec").all_inner_texts()] == ["SÜREÇLER", "TANIMLAR", "ANALİZ"]
 
 
-def test_sekme_gecisi(page):
-    page.click("#t-data")
+def test_menu_tum_tablolari_kapsar(page):
+    # Gizli olsa da DOM'da bulunan her tablo bağlantısı: 54 tablo + Plan Panosu
+    assert page.locator("#menu a").count() == 55
+
+
+def test_menu_acilip_kapanir(page):
+    grup = page.locator('.grp[data-g="siparis"]')
+    assert "open" not in (grup.get_attribute("class") or "")
+    page.click('.gh[data-g="siparis"]')
+    assert grup.locator("a").first.is_visible()
+    page.click('.gh[data-g="siparis"]')
+    assert not grup.locator("a").first.is_visible()
+
+
+def test_menuden_tabloya_gecis(page):
+    page.click('.gh[data-g="siparis"]')
+    page.click('#menu a[data-t="sales_order"]')
+    page.wait_for_selector('#v-data[data-table="sales_order"] #dform [data-c]')
     assert page.is_visible("#v-data") and not page.is_visible("#v-plan")
-    page.click("#t-plan")
+    assert page.inner_text("#d-title") == "Siparişler"
+    assert "Sipariş › Siparişler" in page.inner_text("#crumb")
+    assert "on" in page.get_attribute('#menu a[data-t="sales_order"]', "class")
+    assert page.url.endswith("#t/sales_order")
+
+
+def test_menuden_plan_panosuna_donus(page):
+    veri_tablosu(page, "app_user")
+    page.click('.gh[data-g="planlama"]')
+    page.click('#menu a[data-t="@plan"]')
+    page.wait_for_selector("#board .row")
     assert page.is_visible("#v-plan") and not page.is_visible("#v-data")
+
+
+def test_adrese_dogrudan_gitme(page):
+    page.goto(page.url.split("#")[0] + "#t/work_order")
+    page.wait_for_selector('#v-data[data-table="work_order"] #dform [data-c]')
+    assert page.inner_text("#d-title") == "İş emirleri"
+    assert page.locator('.grp[data-g="uretim"]').get_attribute("class").count("open") == 1
+
+
+def test_gecersiz_adres_plana_doner(page):
+    page.goto(page.url.split("#")[0] + "#t/yok_boyle_tablo")
+    page.wait_for_selector("#board .row")
+    assert page.url.endswith("#plan")
 
 
 # ---------- plan panosu ----------
@@ -158,12 +199,10 @@ def test_atama_sayfa_yenilenince_kalir(page):
 
 # ---------- veri ekranı ----------
 def test_tablo_adlari_turkce(page):
-    page.click("#t-data")
-    page.wait_for_selector("#tbl option", state="attached")
-    secenekler = page.locator("#tbl option").all_inner_texts()
-    assert len(secenekler) == 54
-    for ad in ("Kullanıcılar", "İş emirleri", "Siparişler", "Üretim hatları (bantlar)"):
-        assert ad in secenekler
+    adlar = page.locator("#menu a").all_inner_texts()
+    assert len(adlar) == 55
+    for ad in ("Kullanıcılar", "İş emirleri", "Siparişler", "Üretim hatları (bantlar)", "Plan Panosu"):
+        assert ad in adlar
 
 
 def test_alan_etiketleri_turkce(page):

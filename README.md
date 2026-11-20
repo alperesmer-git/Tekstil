@@ -2,7 +2,7 @@
 
 Klasik üretim takip kurallarını (ERP/MRP) yapay zeka tabanlı tahminleme ve optimizasyon algoritmalarıyla birleştiren, tekstil sektörünün dinamik yapısına (renk-beden varyantları, fire oranları, fason takibi) uygun bir üretim planlama sistemi.
 
-> **Durum:** Veritabanı şeması (v1 taslak) ve 1. Faz'ın yerel web arayüzü (Plan Panosu + Veri ekranı) hazır. 2. ve 3. Faz yol haritasına göre geliştirilecektir.
+> **Durum:** Veritabanı şeması (v1 taslak) ve 1. Faz'ın yerel web arayüzü (Plan Panosu + süreç menüsü) hazır. 2. ve 3. Faz yol haritasına göre geliştirilecektir.
 
 ---
 
@@ -99,7 +99,7 @@ psql -d tekstil -f tekstil_planlama_schema.sql
 Şemaya bağlı, yerel çalışan bir web arayüzü bulunur (FastAPI + tek sayfalık HTML/JavaScript). Arayüz tamamen Türkçedir.
 
 - **Plan Panosu:** Hatlar için 14 günlük zaman çizelgesi; iş emirlerini hatlara ve zamana atama, aynı hatta çakışma kontrolü.
-- **Veri:** Şemadaki tüm tablolar için Türkçe etiketli liste, kayıt ekleme ve silme.
+- **Süreç menüsü:** Sol menü ekranları Süreçler (Planlama, Sipariş, Depo ve Satın Alma, Kesim, Üretim, Fason, Kalite), Tanımlar ve Analiz olarak gruplar; şemadaki 54 tablonun tamamı bir grupta yer alır ve Türkçe etiketli liste, kayıt ekleme ve silme sunar. Menü `app/static/menu.js` dosyasında tanımlıdır.
 
 ### Çalıştırma
 
@@ -153,6 +153,7 @@ Tekstil/
 │   ├── requirements.txt
 │   └── static/
 │       ├── index.html            # Web arayüzü
+│       ├── menu.js               # Süreç menüsü tanımı
 │       └── labels.js             # Türkçe etiket sözlüğü
 └── docs/
     ├── kullanici-kilavuzu.md     # Ekran ve kurulum kılavuzu
