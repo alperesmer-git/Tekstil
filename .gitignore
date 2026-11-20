@@ -1,0 +1,14 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Ortam ve gizli bilgiler
+.env
+*.env
+
+# Yedekler ve geçici dosyalar
+*.dump
+yedek*.sql
+.DS_Store
+Thumbs.db
