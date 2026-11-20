@@ -2,24 +2,40 @@
 <html lang="tr"><head><meta charset="utf-8"><title>Tekstil Planlama</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-:root{--bg:#f6f7f9;--fg:#1c2330;--card:#fff;--bd:#d9dde3;--ac:#2563eb;--mu:#667085}
-@media(prefers-color-scheme:dark){:root{--bg:#14171c;--fg:#e6e9ee;--card:#1d2128;--bd:#323843;--ac:#6b9bff;--mu:#98a2b3}}
+:root{--bg:#f6f7f9;--fg:#1c2330;--card:#fff;--bd:#d9dde3;--ac:#2563eb;--mu:#667085;--hv:#eef2f8}
+@media(prefers-color-scheme:dark){:root{--bg:#14171c;--fg:#e6e9ee;--card:#1d2128;--bd:#323843;--ac:#6b9bff;--mu:#98a2b3;--hv:#262c36}}
 *{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;background:var(--bg);color:var(--fg)}
-header{display:flex;gap:8px;align-items:center;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--bd)}
-header b{margin-right:12px}button,select,input{font:inherit;padding:5px 9px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--fg)}
-button{cursor:pointer}button.on,button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
-main{padding:16px}.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:14px;overflow-x:auto}
+header{position:sticky;top:0;z-index:5;height:50px;display:flex;gap:10px;align-items:center;padding:0 16px;background:var(--card);border-bottom:1px solid var(--bd)}
+header b{font-size:15px}#crumb{color:var(--mu)}#mt{display:none}
+button,select,input{font:inherit;padding:5px 9px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--fg)}
+button{cursor:pointer}button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.shell{display:flex;align-items:flex-start}
+#menu{width:260px;flex:none;position:sticky;top:50px;max-height:calc(100vh - 50px);overflow-y:auto;padding:8px 10px 20px;background:var(--card);border-right:1px solid var(--bd)}
+.sec{margin:14px 6px 4px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mu)}
+.gh{display:flex;justify-content:space-between;align-items:center;width:100%;border:0;background:none;text-align:left;font-weight:600;padding:7px 8px;border-radius:6px}
+.gh:hover,#menu a:hover{background:var(--hv)}.gh i{font-style:normal;color:var(--mu);transition:transform .15s}
+.grp.open .gh i{transform:rotate(90deg)}.grp.cur .gh{color:var(--ac)}
+.gi{display:none;margin:0 0 4px 10px;padding-left:8px;border-left:1px solid var(--bd)}.grp.open .gi{display:block}
+#menu a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+#menu a.on{background:var(--ac);color:#fff}
+main{flex:1;min-width:0;padding:16px}h2{margin:0 0 12px;font-size:18px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:14px;overflow-x:auto}
 table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mu);font-weight:600}
 .row{display:flex;align-items:center;margin-bottom:6px}.lbl{width:110px;flex:none;font-weight:600}
 .track{position:relative;flex:1;height:30px;border:1px solid var(--bd);border-radius:4px;
  background:repeating-linear-gradient(90deg,transparent 0 calc(100%/14 - 1px),var(--bd) calc(100%/14 - 1px) calc(100%/14))}
 .bar{position:absolute;top:3px;bottom:3px;background:var(--ac);color:#fff;border-radius:4px;padding:0 6px;font-size:12px;line-height:22px;overflow:hidden;cursor:pointer;white-space:nowrap}
 .days{display:flex;margin-left:110px;color:var(--mu);font-size:11px}.days span{flex:1}
-.err{color:#d92d20;margin-left:8px}.grid{display:flex;flex-wrap:wrap;gap:8px;align-items:end}.grid label{display:flex;flex-direction:column;font-size:12px;color:var(--mu)}
+.err{color:#d92d20}#d-err:not(:empty){margin-bottom:10px}#a-err{margin-left:8px}
+.grid{display:flex;flex-wrap:wrap;gap:8px;align-items:end}.grid label{display:flex;flex-direction:column;font-size:12px;color:var(--mu)}
+@media(max-width:800px){#mt{display:inline-block}#menu{display:none;position:fixed;inset:50px 0 0 0;width:auto;max-height:none;z-index:4}body.mo #menu{display:block}}
 </style></head><body>
-<header><b>Tekstil Planlama</b><button id="t-plan" class="on">Plan Panosu</button><button id="t-data">Veri</button></header>
+<header><button id="mt" aria-label="Menü">☰</button><b>Tekstil Planlama</b><span id="crumb"></span></header>
+<div class="shell">
+<nav id="menu" aria-label="Ana menü"></nav>
 <main>
 <section id="v-plan">
+ <h2>Plan Panosu</h2>
  <div class="card"><div class="days" id="days"></div><div id="board"></div></div>
  <div class="card"><div class="grid" id="aform">
   <label>İş emri<input id="a-id" readonly size="5"></label>
@@ -30,20 +46,47 @@ table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:5px 8px;
  <div class="card"><table><thead><tr><th>No</th><th>Sipariş</th><th>Model</th><th>Departman</th><th>Adet</th><th>Termin</th><th>Hat</th><th>Başlangıç</th><th>Bitiş</th></tr></thead><tbody id="olist"></tbody></table></div>
 </section>
 <section id="v-data" hidden>
- <div class="card"><select id="tbl"></select> <span class="err" id="d-err"></span></div>
+ <h2 id="d-title"></h2>
+ <div class="err" id="d-err"></div>
  <div class="card"><div class="grid" id="dform"></div></div>
  <div class="card"><table id="dtable"></table></div>
 </section>
-</main>
+</main></div>
 <script src="/static/labels.js"></script>
+<script src="/static/menu.js"></script>
 <script>
 const $=s=>document.querySelector(s),esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function api(u,o){const r=await fetch(u,o);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(typeof j.detail=='string'?j.detail:'Geçersiz giriş, alanları kontrol edin');return j}
 const post=(u,m,b)=>api(u,{method:m,headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
 const loc=d=>d?new Date(new Date(d)-new Date(d).getTimezoneOffset()*6e4).toISOString().slice(0,16):'';
 const fmt=d=>d?new Date(d).toLocaleString('tr-TR',{dateStyle:'short',timeStyle:'short'}):'';
-$('#t-plan').onclick=()=>show('plan');$('#t-data').onclick=()=>show('data');
-function show(v){$('#v-plan').hidden=v!='plan';$('#v-data').hidden=v!='data';$('#t-plan').classList.toggle('on',v=='plan');$('#t-data').classList.toggle('on',v=='data');v=='plan'?loadPlan():loadTables()}
+
+/* ---------- Menü ve yönlendirme ---------- */
+const FLAT=MENU.flatMap(g=>g.items), itemLabel=i=>i=='@plan'?'Plan Panosu':L.t(i);
+function buildMenu(){let h='',sec='';
+ for(const g of MENU){
+  if(g.section!==sec){sec=g.section;h+=`<div class="sec">${esc(sec)}</div>`}
+  h+=`<div class="grp" data-g="${g.id}"><button class="gh" data-g="${g.id}"><span>${esc(g.title)}</span><i>▸</i></button><div class="gi">`+
+   g.items.map(i=>`<a href="#${i=='@plan'?'plan':'t/'+i}" data-t="${i}">${esc(itemLabel(i))}</a>`).join('')+'</div></div>'}
+ $('#menu').innerHTML=h;
+ document.querySelectorAll('.gh').forEach(b=>b.onclick=()=>b.parentElement.classList.toggle('open'));
+}
+$('#mt').onclick=()=>document.body.classList.toggle('mo');
+function route(){
+ const h=location.hash.slice(1)||'plan';
+ const key=h=='plan'?'@plan':(h.startsWith('t/')?h.slice(2):null);
+ if(!FLAT.includes(key)){location.replace('#plan');return}
+ document.body.classList.remove('mo');
+ const plan=key=='@plan',g=MENU.find(x=>x.items.includes(key));
+ $('#v-plan').hidden=!plan;$('#v-data').hidden=plan;
+ document.querySelectorAll('#menu a').forEach(a=>a.classList.toggle('on',a.dataset.t===key));
+ document.querySelectorAll('.grp').forEach(e=>{const cur=e.dataset.g===g.id;e.classList.toggle('cur',cur);if(cur)e.classList.add('open')});
+ $('#crumb').textContent=`${g.title} › ${itemLabel(key)}`;
+ if(plan)loadPlan();else{$('#d-title').textContent=L.t(key);loadRows(key)}
+}
+window.addEventListener('hashchange',route);
+
+/* ---------- Plan Panosu ---------- */
 let P={lines:[],orders:[]};
 async function loadPlan(){
  P=await api('/api/plan');
@@ -64,6 +107,8 @@ async function save(clear){const id=$('#a-id').value;if(!id)return;
  try{await post('/api/plan/'+id,'PUT',clear?{}:{line_id:+$('#a-line').value||null,planned_start:$('#a-s').value||null,planned_end:$('#a-e').value||null});$('#a-err').textContent='';loadPlan()}
  catch(e){$('#a-err').textContent=e.message}}
 $('#a-save').onclick=()=>save(false);$('#a-clear').onclick=()=>save(true);
+
+/* ---------- Tablo (kayıt) ekranı ---------- */
 let ENUMS={};
 const cell=(v,k)=>typeof v=='boolean'?(v?'Evet':'Hayır'):(ENUMS[k]&&v!=null?L.v(v):(v&&typeof v=='object'?JSON.stringify(v):v));
 function field(c){const n=esc(c.name);
@@ -71,22 +116,20 @@ function field(c){const n=esc(c.name);
  if(!opts)return `<input data-c="${n}" placeholder="${esc(L.ty(c.type))}">`;
  const lab=c.options?L.v:(v=>v=='true'?'Evet':'Hayır');
  return `<select data-c="${n}"><option value="">${c.required?'Seçiniz…':'—'}</option>`+opts.map(o=>`<option value="${esc(o)}">${esc(lab(o))}</option>`).join('')+'</select>'}
-async function loadTables(){if($('#tbl').options.length)return loadRows();
- $('#tbl').innerHTML=(await api('/api/tables')).map(t=>`<option value="${t}">${esc(L.t(t))}</option>`).join('');$('#tbl').onchange=loadRows;loadRows()}
 let rowsSeq=0;
-async function loadRows(){const my=++rowsSeq,t=$('#tbl').value;$('#d-err').textContent='';
- const d=await api('/api/t/'+t);
+async function loadRows(t){const my=++rowsSeq;$('#d-err').textContent='';
+ let d;try{d=await api('/api/t/'+t)}catch(e){if(my===rowsSeq){$('#dform').innerHTML='';$('#dtable').innerHTML='';$('#d-err').textContent=e.message}return}
  if(my!==rowsSeq)return;   // daha yeni bir istek başladı; bu eski cevabı yok say
  ENUMS=d.enums||{};
  $('#v-data').dataset.table=t;
  $('#dform').innerHTML=d.form.map(c=>`<label>${esc(L.c(c.name))}${c.required?' *':''}${field(c)}</label>`).join('')+'<button class="pri" id="add">Ekle</button>';
  $('#add').onclick=async()=>{const b={};document.querySelectorAll('#dform [data-c]').forEach(i=>b[i.dataset.c]=i.value);
-  try{await post('/api/t/'+t,'POST',b);loadRows()}catch(e){$('#d-err').textContent=e.message}};
+  try{await post('/api/t/'+t,'POST',b);loadRows(t)}catch(e){$('#d-err').textContent=e.message}};
  const keys=d.rows[0]?Object.keys(d.rows[0]):d.form.map(c=>c.name);
  $('#dtable').innerHTML='<tr>'+keys.map(k=>`<th>${esc(L.c(k))}</th>`).join('')+(d.deletable?'<th></th>':'')+'</tr>'+
   d.rows.map(r=>'<tr>'+keys.map(k=>`<td>${esc(cell(r[k],k))}</td>`).join('')+(d.deletable?`<td><button data-del="${r.id}">Sil</button></td>`:'')+'</tr>').join('');
  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Silinsin mi?'))return;
-  try{await api(`/api/t/${t}/${b.dataset.del}`,{method:'DELETE'});loadRows()}catch(e){$('#d-err').textContent=e.message}});
+  try{await api(`/api/t/${t}/${b.dataset.del}`,{method:'DELETE'});loadRows(t)}catch(e){$('#d-err').textContent=e.message}});
 }
-loadPlan();
+buildMenu();route();
 </script></body></html>

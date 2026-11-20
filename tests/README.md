@@ -37,8 +37,9 @@ yetkili bir kullanıcı gerekir (ör. `postgres`). Şifrede `@ : /` gibi karakte
 | `test_api_data.py` | Tablo listesi ve form meta verisi; limit; sıralama; 6 rolle ekleme; boş alan = varsayılan; evet/hayır; bilinmeyen alan; Türkçe karakter/tırnak; tarih; tüm hata mesajları (boş kayıt, geçersiz değer, tekrar, bağlı kayıt, zorunlu alan, biçim, tarih); silme ve bağımlılık; kimliksiz tablo; bilinmeyen/kötü niyetli tablo adları ve SQL enjeksiyonu |
 | `test_api_plan.py` | Pano verisi ve sıralaması; atama; çakışma (tam/kısmi/bitişik/kendi aralığı/iptal edilen iş emri); hatalı aralık; olmayan hat/iş emri; geçersiz tarih; plan kaldırma; art arda iş |
 | `test_workflows.py` | Siparişten plana uçtan uca akış; iki siparişin aynı bantta sırayla planlanması; tekrarlı sipariş no; silme sırası; yeni model tanımlama sırası |
+| `test_menu.py` | `menu.js`: şemadaki her tablo menüde tam bir kez yer alır, fazla/tekrarlı öğe yok, 13 grup |
 | `test_static_ui.py` | Ana sayfa ve statik dosyaların sunulması |
-| `test_e2e_ui.py` | Tarayıcıda: sekmeler, pano, atama, çakışma uyarısı, plan kaldırma, tablo/alan Türkçe adları, Rol ve durum seçim listeleri, kayıt ekleme/silme/iptal, hata uyarıları, JavaScript hatası olmaması |
+| `test_e2e_ui.py` | Tarayıcıda: süreç menüsü (açılıp kapanma, tabloya geçiş, doğrudan adres, geçersiz adres), pano, atama, çakışma uyarısı, plan kaldırma, tablo/alan Türkçe adları, Rol ve durum seçim listeleri, kayıt ekleme/silme/iptal, hata uyarıları, JavaScript hatası olmaması |
 
 ## Notlar
 

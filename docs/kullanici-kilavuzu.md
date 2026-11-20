@@ -6,10 +6,15 @@ Yerel web arayüzü · Sürüm 1
 
 Tekstil Planlama; sipariş, model, ürün ağacı (BOM), rota, hat ve iş emri bilgilerini PostgreSQL veritabanında tutan ve iş emirlerini bantlara manuel olarak planlamanızı sağlayan bir web uygulamasıdır. Uygulama bilgisayarınızda yerel olarak çalışır; verileriniz yalnızca kendi PostgreSQL veritabanınızda saklanır.
 
-| Ekran | Ne işe yarar |
+Ekranın solunda süreçlere göre gruplanmış bir **menü** bulunur. Bir grubun başlığına tıklayınca altındaki ekranlar açılır:
+
+| Bölüm | Gruplar |
 |---|---|
-| **Plan Panosu** | İş emirlerini hatlara (bantlara) atar, zaman çizelgesinde görüntüler. |
-| **Veri** | Şemadaki tüm tablolara kayıt ekler, listeler ve siler. |
+| **Süreçler** | Planlama (Plan Panosu dahil), Sipariş, Depo ve Satın Alma, Kesim, Üretim, Fason, Kalite |
+| **Tanımlar** | Ürün ve Model, Malzeme ve Ürün Ağacı, Rota ve Operasyon, Hat ve Kapasite, Temel Tanımlar |
+| **Analiz** | Yapay Zeka ve Analiz |
+
+**Plan Panosu** iş emirlerini hatlara atar ve zaman çizelgesinde gösterir. Diğer tüm menü öğeleri (ör. *Siparişler*, *Malzeme lotları*) ilgili tabloya kayıt ekler, listeler ve siler. Üstteki başlık, bulunduğunuz yeri gösterir (ör. *Sipariş › Siparişler*). Telefon ve dar ekranlarda menü ☰ düğmesiyle açılır.
 
 ## 2. Uygulamayı Başlatma
 
@@ -54,11 +59,11 @@ Seçtiğiniz hatta aynı zaman aralığına denk gelen başka bir iş emri varsa
 
 Çizelgenin altındaki tablo iptal edilmemiş tüm iş emirlerini gösterir: iş emri no, sipariş, model, departman, adet, termin (yükleme tarihi), hat, planlanan başlangıç ve bitiş. Hatta atanmamış iş emirlerinde hat sütununda **—** görünür.
 
-## 4. Veri Ekranı
+## 4. Kayıt Ekranları
 
 ### 4.1 Tablo seçme ve listeleme
 
-Üstteki açılır listeden tabloyu seçin (ör. *Modeller*, *Siparişler*, *İş emirleri*). Liste en yeni kayıttan başlar ve en fazla **200 kayıt** gösterir.
+Sol menüden grubu açıp ekranı seçin (ör. *Ürün ve Model › Modeller*, *Sipariş › Siparişler*, *Üretim › İş emirleri*). Liste en yeni kayıttan başlar ve en fazla **200 kayıt** gösterir.
 
 ### 4.2 Kayıt ekleme
 
@@ -108,10 +113,10 @@ Kumaş, fason, kalite ve yapay zeka destek tabloları aynı mantıkla, ihtiyaç 
 
 ## 6. Örnek: Bir Siparişi Bantta Planlamak
 
-1. **Veri → Siparişler:** sipariş numarası ve müşteri numarası.
-2. **Veri → Sipariş satırları:** sipariş numarası, model numarası, yükleme tarihi, rota numarası.
-3. **Veri → Sipariş renk-beden adetleri:** her varyant için sipariş adedi.
-4. **Veri → İş emirleri:** sipariş satırı numarası, rota adımı numarası (ör. Dikim adımı), planlanan adet.
+1. **Sipariş › Siparişler:** sipariş numarası ve müşteri numarası.
+2. **Sipariş › Sipariş satırları:** sipariş numarası, model numarası, yükleme tarihi, rota numarası.
+3. **Sipariş › Sipariş renk-beden adetleri:** her varyant için sipariş adedi.
+4. **Üretim › İş emirleri:** sipariş satırı numarası, rota adımı numarası (ör. Dikim adımı), planlanan adet.
 5. **Plan Panosu:** yeni iş emrine tıklayın, bandı ve zamanı seçip **Kaydet**'e basın.
 6. Çubuğun doğru hatta ve günlerde göründüğünü, bitişinin yükleme tarihinden önce olduğunu listeden kontrol edin.
 
