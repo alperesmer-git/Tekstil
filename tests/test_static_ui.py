@@ -6,9 +6,9 @@ def test_ana_sayfa(client):
     assert r.status_code == 200 and "text/html" in r.headers["content-type"]
     h = r.text
     assert '<html lang="tr"' in h
-    for metin in ("Tekstil Planlama", "Plan Panosu", "Veri", "Planı kaldır", "Kaydet", "Ekle"):
+    for metin in ("Tekstil Planlama", "Plan Panosu", "Planı kaldır", "Kaydet"):
         assert metin in h
-    assert "/static/labels.js" in h
+    assert "/static/labels.js" in h and "/static/menu.js" in h
 
 
 def test_etiket_dosyasi_sunuluyor(client):
